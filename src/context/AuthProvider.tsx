@@ -47,6 +47,10 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
       setUser(data.session?.user ?? null);
       setEmailConfirmed(data.session?.user?.email_confirmed_at ? true : false);
       setLoading(false);
+
+      if (window.location.pathname === '/auth/callback') {
+        window.history.replaceState({}, document.title, '/');
+      }
     })();
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
