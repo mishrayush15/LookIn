@@ -82,7 +82,7 @@ export const OnboardingForm: React.FC<OnboardingFormProps> = ({ onComplete }) =>
                         <div className="space-y-1">
                             <Label>Location (City) *</Label>
                             <Select
-                                onValueChange={(value) => {
+                                onValueChange={(value: string) => {
                                     const selected = CITIES.find((c) => c.id === value);
                                     setCity(value);
                                     setCityName(selected?.name || '');

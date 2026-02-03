@@ -17,7 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from './components/ui/avatar';
 import { useAuth } from './context/AuthProvider';
 import { supabase } from "./lib/supabaseClient";
 
-type Page = 'landing' | 'location-selector' | 'purpose-selector' | 'find-flow' | 'list-flow' | 'profile' | 'messages' | 'safety' | 'public-profile';
+type Page = 'landing' | 'onboarding' | 'location-selector' | 'purpose-selector' | 'find-flow' | 'list-flow' | 'profile' | 'messages' | 'safety' | 'public-profile';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
