@@ -4,6 +4,7 @@ import { Button } from './components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Landing, type LandingProps } from './components/Landing';
+import { Login } from './components/Login';
 import { Profile } from './components/Profile';
 import { Messages } from './components/Messages';
 import { Safety } from './components/Safety';
@@ -17,7 +18,9 @@ import { Avatar, AvatarFallback, AvatarImage } from './components/ui/avatar';
 import { useAuth } from './context/AuthProvider';
 import { supabase } from "./lib/supabaseClient";
 
-type Page = 'landing' | 'onboarding' | 'location-selector' | 'purpose-selector' | 'find-flow' | 'list-flow' | 'profile' | 'messages' | 'safety' | 'public-profile';
+
+type Page = 'landing' | 'login' | 'location-selector' | 'purpose-selector' | 'find-flow' | 'list-flow' | 'profile' | 'messages' | 'safety' | 'public-profile';
+
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
@@ -41,7 +44,8 @@ export default function App() {
   };
 
   const handleGetStarted = () => {
-    // This is for the "Get Started Free" button - should go to location selector
+    // This is for the "Get Started Free" button on landing AND successful login
+    // Navigate to location selector after authentication
     setCurrentPage('location-selector');
   };
 
@@ -68,9 +72,13 @@ export default function App() {
   // Prevent unauthenticated access to protected pages by redirecting to landing.
   // Also redirect to onboarding if needed.
   useEffect(() => {
-    if (loading) return;
 
-    if (!isAuthenticated && currentPage !== 'landing') {
+    if (!loading && !isAuthenticated && (currentPage === 'login' || currentPage === 'location-selector' || currentPage === 'purpose-selector' || currentPage === 'find-flow' || currentPage === 'list-flow' || currentPage === 'profile' || currentPage === 'messages' || currentPage === 'safety')) {
+      if (currentPage === 'login') {
+        // Allow login page to be accessed without authentication
+        return;
+      }
+
       setCurrentPage('landing');
       return;
     }
@@ -151,6 +159,17 @@ export default function App() {
     return () => window.removeEventListener('open-public-profile', handler as EventListener);
   }, []);
 
+  // Listen for city selection from Login's Browse modal
+  useEffect(() => {
+    const cityHandler = (e: any) => {
+      if (e?.detail?.cityId && e?.detail?.cityName) {
+        handleLocationSelect(e.detail.cityId, e.detail.cityName);
+      }
+    };
+    window.addEventListener('city-selected', cityHandler as EventListener);
+    return () => window.removeEventListener('city-selected', cityHandler as EventListener);
+  }, []);
+
   // Listen for start conversation events
   useEffect(() => {
     const handler = (e: any) => {
@@ -166,9 +185,10 @@ export default function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'landing':
-        return <Landing onLogin={handleLogin} onGetStarted={handleGetStarted} />;
-      case 'onboarding':
-        return <OnboardingForm onComplete={handleOnboardingComplete} />;
+        return <Landing onGetStarted={handleGetStarted} />;
+      case 'login':
+        return <Login onLogin={handleLogin} onBack={() => setCurrentPage('landing')} />;
+
       case 'location-selector':
         return <LocationSelector onLocationSelect={handleLocationSelect} onBack={isAuthenticated ? handleBackToLocationSelector : handleLogout} />;
       case 'purpose-selector':
@@ -199,7 +219,7 @@ export default function App() {
           />
         );
       default:
-        return <Landing onLogin={handleLogin} onGetStarted={handleGetStarted} />;
+        return <Landing onGetStarted={handleGetStarted} />;
     }
   };
 
