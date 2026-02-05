@@ -1,22 +1,21 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Home, Shield, Users, CheckCircle, Star, MessageSquare, Chrome, Github } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Badge } from './ui/badge';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { useAuth } from '../context/AuthProvider';
 import { EmailConfirmation } from './EmailConfirmation';
 
 export interface LandingProps {
-  onLogin: () => void;
   onGetStarted: () => void;
 }
 
-export function Landing({ onLogin, onGetStarted }: LandingProps) {
-  // Landing component with OAuth and email authentication
+export function Landing({ onGetStarted }: LandingProps) {
+  const [imgAvailable, setImgAvailable] = useState<boolean | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -36,7 +35,7 @@ export function Landing({ onLogin, onGetStarted }: LandingProps) {
       setError(res.error.message);
       return;
     }
-    onLogin();
+    onGetStarted();
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -49,7 +48,6 @@ export function Landing({ onLogin, onGetStarted }: LandingProps) {
       setError(res.error.message);
       return;
     }
-    // Show email confirmation page after successful signup
     setShowEmailConfirmation(true);
   };
 
@@ -82,6 +80,20 @@ export function Landing({ onLogin, onGetStarted }: LandingProps) {
     );
   }
 
+  useEffect(() => {
+    let mounted = true;
+    fetch('/flatmates.jpg', { method: 'HEAD' })
+      .then((res) => {
+        if (!mounted) return;
+        setImgAvailable(res.ok);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setImgAvailable(false);
+      });
+    return () => { mounted = false; };
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -98,17 +110,14 @@ export function Landing({ onLogin, onGetStarted }: LandingProps) {
                   <span className="text-primary block">Flatmate</span>
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-lg">
-                  Look in to a new way of finding flatmates. Connect with verified, compatible people through our intelligent matching system. 
+                  Look.In is a new way of finding flatmates. Connect with verified, compatible people through our intelligent matching system. 
                   Say goodbye to random groups and unsafe choices.
                 </p>
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button size="lg" onClick={onGetStarted} className="text-lg px-8 py-6">
-                  Get Started Free
-                </Button>
-                <Button variant="outline" size="lg" className="text-lg px-8 py-6">
-                  Learn More
+                  Get Started 
                 </Button>
               </div>
 

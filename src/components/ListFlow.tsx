@@ -104,18 +104,25 @@ export function ListFlow({ selectedCity, cityName, onBack }: ListFlowProps) {
 
   return (
     <div className="space-y-6">
+      {/* Back Button */}
+      <div className="flex items-center">
+        <Button 
+          variant="ghost" 
+          onClick={onBack}
+          className="flex items-center gap-2 pl-0"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm" onClick={onBack} className="p-2">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-medium">List Your Room</h1>
-            <p className="text-muted-foreground">
-              Find the perfect flatmate for your room in {cityName}
-            </p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-medium">List Your Room</h1>
+          <p className="text-muted-foreground">
+            Find the perfect flatmate for your room in {cityName}
+          </p>
         </div>
         <Button 
           onClick={() => setShowCreateListing(true)}
