@@ -8,6 +8,7 @@ import { Login } from './components/Login';
 import { Profile } from './components/Profile';
 import { Messages } from './components/Messages';
 import { Safety } from './components/Safety';
+import { OnboardingForm } from './components/OnboardingForm';
 import { LocationSelector } from './components/LocationSelector';
 import { PurposeSelector } from './components/PurposeSelector';
 import { FindFlow } from './components/FindFlow';
@@ -15,8 +16,11 @@ import { ListFlow } from './components/ListFlow';
 import { PublicProfile } from './components/PublicProfile';
 import { Avatar, AvatarFallback, AvatarImage } from './components/ui/avatar';
 import { useAuth } from './context/AuthProvider';
+import { supabase } from "./lib/supabaseClient";
+
 
 type Page = 'landing' | 'login' | 'location-selector' | 'purpose-selector' | 'find-flow' | 'list-flow' | 'profile' | 'messages' | 'safety' | 'public-profile';
+
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
@@ -29,6 +33,10 @@ export default function App() {
 
   // Determine if user is authenticated
   const isAuthenticated = !loading && !!user && emailConfirmed;
+
+  // Determine if user needs onboarding
+  const needsOnboarding =
+    isAuthenticated && !user?.user_metadata?.onboarded;
 
   const handleLogin = () => {
     // This is called after successful authentication
@@ -51,21 +59,64 @@ export default function App() {
 
   // If a session already exists on load with confirmed email, send users to location selection.
   useEffect(() => {
-    if (isAuthenticated && currentPage === 'landing') {
-      setCurrentPage('location-selector');
+    if (!loading && isAuthenticated && currentPage === 'landing') {
+      if (needsOnboarding) {
+        setCurrentPage('onboarding');
+      } else {
+        setCurrentPage('location-selector');
+      }
     }
-  }, [isAuthenticated, currentPage]);
+  }, [loading, isAuthenticated, needsOnboarding, currentPage]);
+
 
   // Prevent unauthenticated access to protected pages by redirecting to landing.
+  // Also redirect to onboarding if needed.
   useEffect(() => {
+
     if (!loading && !isAuthenticated && (currentPage === 'login' || currentPage === 'location-selector' || currentPage === 'purpose-selector' || currentPage === 'find-flow' || currentPage === 'list-flow' || currentPage === 'profile' || currentPage === 'messages' || currentPage === 'safety')) {
       if (currentPage === 'login') {
         // Allow login page to be accessed without authentication
         return;
       }
+
       setCurrentPage('landing');
+      return;
     }
-  }, [loading, isAuthenticated, currentPage]);
+
+    if (needsOnboarding && currentPage !== 'onboarding') {
+      setCurrentPage('onboarding');
+    }
+  }, [loading, isAuthenticated, needsOnboarding, currentPage]);
+
+  // Handle onboarding completion
+  const handleOnboardingComplete = async (data: {
+    fullName: string;
+    city: string;
+    cityName: string;
+    organization?: string;
+  }) => {
+    if (!user) return;
+
+    console.log("✅ Onboarding data received:", data);
+
+    // Save to Supabase
+    await supabase.auth.updateUser({
+      data: {
+        onboarded: true,
+        full_name: data.fullName,
+        organization: data.organization,
+        city: data.city,
+        city_name: data.cityName,
+      },
+    });
+
+    // Update local state
+    setSelectedCity(data.city);
+    setSelectedCityName(data.cityName);
+
+    // Move forward
+    setCurrentPage('purpose-selector');
+  };
 
   const handleLocationSelect = (cityId: string, cityName: string) => {
     setSelectedCity(cityId);
@@ -137,6 +188,7 @@ export default function App() {
         return <Landing onGetStarted={handleGetStarted} />;
       case 'login':
         return <Login onLogin={handleLogin} onBack={() => setCurrentPage('landing')} />;
+
       case 'location-selector':
         return <LocationSelector onLocationSelect={handleLocationSelect} onBack={isAuthenticated ? handleBackToLocationSelector : handleLogout} />;
       case 'purpose-selector':
@@ -172,7 +224,7 @@ export default function App() {
   };
 
   // Show landing page without navbar if not authenticated
-  if (!isAuthenticated && currentPage === 'landing') {
+  if (currentPage === 'landing' || currentPage === 'onboarding') {
     return renderPage();
   }
 
